@@ -48,6 +48,21 @@ static void ApplyLabelFont(HWND hwnd) {
 
 // Controles
 static HWND g_mainWnd = NULL;
+static WNDPROC g_oldLabelProc = NULL; // Para subclassing da label "Suporte"
+
+// Subclass procedure para a label "Suporte" - torna clicável
+static LRESULT CALLBACK LabelSubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	if (msg == WM_LBUTTONDOWN) {
+		// Abrir Discord quando clicar
+		ShellExecuteW(NULL, L"open", L"https://discord.gg/JuEzkT4puD", NULL, NULL, SW_SHOWNORMAL);
+		return 0;
+	} else if (msg == WM_SETCURSOR) {
+		// Cursor de mão
+		SetCursor(LoadCursor(NULL, IDC_HAND));
+		return TRUE;
+	}
+	return CallWindowProc(g_oldLabelProc, hwnd, msg, wParam, lParam);
+}
 
 // Labels
 static HWND g_lblTrigger = NULL;
@@ -298,9 +313,9 @@ static void CreateControls(HWND hwnd) {
 		g_lblCrouchPhys, g_lblCrouchVirt, g_lblSuporte, g_lblFooter };
 	for (HWND h : labels) if (h) ApplyLabelFont(h);
 	
-	// Estilizar label "Suporte" como link (cor azul)
+	// Subclass da label "Suporte" para torná-la clicável
 	if (g_lblSuporte) {
-		SetWindowLongPtr(g_lblSuporte, GWL_STYLE, GetWindowLongPtr(g_lblSuporte, GWL_STYLE) | SS_NOTIFY);
+		g_oldLabelProc = (WNDPROC)SetWindowLongPtr(g_lblSuporte, GWLP_WNDPROC, (LONG_PTR)LabelSubclassProc);
 	}
 	
 	HWND ctrls[] = { g_editTrigger, g_editHold, g_statusText, g_btnSelTrigger, g_btnSelHold,
@@ -331,11 +346,6 @@ static LRESULT CALLBACK UI_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 			if (id == 312) StartCapture(g_editJumpVirt);
 			if (id == 313) StartCapture(g_editCrouchPhys);
 			if (id == 314) StartCapture(g_editCrouchVirt);
-		} else if (code == STN_CLICKED) {
-			// Label "Suporte" clicada - abrir Discord
-			if (id == 401) {
-				ShellExecuteW(NULL, L"open", L"https://discord.gg/JuEzkT4puD", NULL, NULL, SW_SHOWNORMAL);
-			}
 		}
 		return 0;
 	}
@@ -350,17 +360,6 @@ static LRESULT CALLBACK UI_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 		SetTextColor((HDC)wParam, g_colText);
 		SetBkColor((HDC)wParam, g_colBg);
 		return (LRESULT)g_brWnd;
-	}
-	case WM_SETCURSOR: {
-		// Cursor de mão quando passar sobre a label "Suporte"
-		POINT pt;
-		GetCursorPos(&pt);
-		HWND hwndUnder = WindowFromPoint(pt);
-		if (hwndUnder == g_lblSuporte) {
-			SetCursor(LoadCursor(NULL, IDC_HAND));
-			return TRUE;
-		}
-		break;
 	}
 	case WM_CTLCOLORBTN:
 		SetTextColor((HDC)wParam, g_colText);
@@ -405,10 +404,10 @@ HWND UI_Show(HINSTANCE hInstance, HWND owner) {
 		wcNew.lpszClassName = cls;
 		wcNew.hbrBackground = NULL;
 		wcNew.style = CS_HREDRAW | CS_VREDRAW;
-		
-		// Carregar ícone personalizado para a janela
-		HICON hIcon = (HICON)LoadImage(NULL, L"imagens\\logo.ico", IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
-		if (hIcon) {
+	
+	// Carregar ícone personalizado para a janela
+	HICON hIcon = (HICON)LoadImage(NULL, L"imagens\\logo.ico", IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+	if (hIcon) {
 			wcNew.hIcon = hIcon;
 			wcNew.hIconSm = hIcon;
 		}
