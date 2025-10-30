@@ -125,9 +125,10 @@ static LRESULT CALLBACK CaptureKbProc(int nCode, WPARAM wParam, LPARAM lParam) {
 			else if (p->vkCode >= VK_F1 && p->vkCode <= VK_F24) { wsprintfA(buf, "F%u", (unsigned)(p->vkCode - VK_F1 + 1)); }
 			else if (p->vkCode == VK_TAB) strcpy_s(buf, sizeof(buf), "TAB");
 			else if (p->vkCode == VK_ESCAPE) strcpy_s(buf, sizeof(buf), "ESC");
-			else if (p->vkCode == VK_SHIFT) strcpy_s(buf, sizeof(buf), "SHIFT");
+			else if (p->vkCode == VK_SHIFT || p->vkCode == VK_LSHIFT || p->vkCode == VK_RSHIFT) strcpy_s(buf, sizeof(buf), "SHIFT");
 			else if (p->vkCode == VK_CONTROL) strcpy_s(buf, sizeof(buf), "CTRL");
 			else if (p->vkCode == VK_MENU) strcpy_s(buf, sizeof(buf), "ALT");
+			else if (p->vkCode == VK_CAPITAL) strcpy_s(buf, sizeof(buf), "CAPSLOCK");
 			if (buf[0]) {
 				wchar_t wbuf[32] = {0};
 				MultiByteToWideChar(CP_UTF8, 0, buf, -1, wbuf, 32);

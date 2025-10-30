@@ -1216,6 +1216,12 @@ bool SettingsWindow::eventFilter(QObject* obj, QEvent* event) {
             stopCapture();
             return true;
         }
+
+        if (keyEvent->key() == Qt::Key_CapsLock) {
+            captureTarget->setText("CAPSLOCK");
+            stopCapture();
+            return true;
+        }
         
         // Para outras teclas, usar a função keyToString
         QString txt = keyToString(keyEvent->key(), keyEvent->modifiers());
