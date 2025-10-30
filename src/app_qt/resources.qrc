@@ -1,0 +1,17 @@
+<RCC>
+  <qresource prefix="/imagens">
+    <file>../../imagens/logo.ico</file>
+    <file>../../imagens/logo.png</file>
+    <file>../../imagens/config.png</file>
+    <file>../../imagens/controle.png</file>
+    <file>../../imagens/discord.png</file>
+    <file>../../imagens/foguete.png</file>
+    <file>../../imagens/instagram_icon.png</file>
+    <file>../../imagens/ligar.png</file>
+    <file>../../imagens/minimizar.png</file>
+    <file>../../imagens/segurar.png</file>
+    <file>../../imagens/sistema.png</file>
+    <file>../../imagens/teclado.png</file>
+  </qresource>
+</RCC>
+
