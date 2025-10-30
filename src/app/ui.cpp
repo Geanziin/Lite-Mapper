@@ -153,7 +153,6 @@ static void UI_SaveFromControls() {
 	GetWindowTextW(g_editCrouchVirt, wbuf, 256); g_cfg.crouch_virtual_key = WToUtf8(wbuf);
 	// Configurações do sistema são lidas do arquivo config.json, não da UI
 	SaveConfig(g_cfg);
-	SetRunAtStartup(g_cfg.start_with_windows);
 }
 
 static void LayoutResize(RECT rc) {

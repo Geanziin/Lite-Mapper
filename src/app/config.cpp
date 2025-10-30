@@ -159,7 +159,6 @@ bool LoadConfig(AppConfig& cfg) {
 	if (json.empty()) return false;
 
 	std::string s;
-	bool b;
 	if (ExtractString(json, "trigger_key", s)) cfg.trigger_key = Trim(s);
 	if (ExtractString(json, "hold_key", s)) cfg.hold_key = Trim(s);
 	if (ExtractString(json, "jump_physical_key", s)) cfg.jump_physical_key = Trim(s);
@@ -180,9 +179,7 @@ bool SaveConfig(const AppConfig& cfg) {
 	f << "  \"jump_physical_key\": \"" << cfg.jump_physical_key << "\",\n";
 	f << "  \"jump_virtual_key\": \"" << cfg.jump_virtual_key << "\",\n";
 	f << "  \"crouch_physical_key\": \"" << cfg.crouch_physical_key << "\",\n";
-	f << "  \"crouch_virtual_key\": \"" << cfg.crouch_virtual_key << "\",\n";
-	f << "  \"start_with_windows\": " << (cfg.start_with_windows ? "true" : "false") << ",\n";
-	f << "  \"start_minimized\": " << (cfg.start_minimized ? "true" : "false") << "\n";
+	f << "  \"crouch_virtual_key\": \"" << cfg.crouch_virtual_key << "\"\n";
 	f << "}\n";
 	return true;
 }

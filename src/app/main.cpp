@@ -108,9 +108,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
 	// Carregar config e configurar DLL
 	AppConfig cfg; LoadConfig(cfg);
 	
-	// Aplicar configuração de inicialização automática
-	SetRunAtStartup(cfg.start_with_windows);
-	
 	std::string hold1 = "w"; // W sempre implícito
 	
 	// Ofuscar strings sensíveis
