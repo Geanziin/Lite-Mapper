@@ -26,7 +26,6 @@ KEYHOOK_API void configure_keys(const char* jump_phys,
                                const char* crouch_virt,
                                const char* trigger,
                                const char* hold1,
-                               const char* hold2,
-                               const char* weapon_swap);
+                               const char* hold2);
 
 }

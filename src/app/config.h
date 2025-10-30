@@ -8,9 +8,7 @@ struct AppConfig {
 	std::string jump_virtual_key;
 	std::string crouch_physical_key;
 	std::string crouch_virtual_key;
-	std::string weapon_swap_key;
-	bool start_with_windows = false;
-	bool start_minimized = false;
+
 };
 
 bool LoadConfig(AppConfig& cfg);

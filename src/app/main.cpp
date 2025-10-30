@@ -120,7 +120,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
 	std::string obf_jump_virt = OBFUSCATE_STR(cfg.jump_virtual_key.c_str());
 	std::string obf_crouch_phys = OBFUSCATE_STR(cfg.crouch_physical_key.c_str());
 	std::string obf_crouch_virt = OBFUSCATE_STR(cfg.crouch_virtual_key.c_str());
-	std::string obf_weapon_swap = OBFUSCATE_STR(cfg.weapon_swap_key.c_str());
 	
 	// Desofuscar para uso
 	std::string trigger_key = DEOBFUSCATE_STR(obf_trigger);
@@ -129,7 +128,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
 	std::string jump_virt_key = DEOBFUSCATE_STR(obf_jump_virt);
 	std::string crouch_phys_key = DEOBFUSCATE_STR(obf_crouch_phys);
 	std::string crouch_virt_key = DEOBFUSCATE_STR(obf_crouch_virt);
-	std::string weapon_swap_key = DEOBFUSCATE_STR(obf_weapon_swap);
 	
 	configure_keys(
 		jump_phys_key.c_str(),
@@ -138,8 +136,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
 		crouch_virt_key.c_str(),
 		trigger_key.c_str(),
 		hold1.c_str(),
-		hold_key.c_str(),
-		weapon_swap_key.c_str()
+		hold_key.c_str()
 	);
 	
 	// Gerar código lixo para ofuscar

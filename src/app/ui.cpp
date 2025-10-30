@@ -5,6 +5,7 @@
 #include <vector>
 #include <shlwapi.h>
 #include <dwmapi.h>
+#include <shellapi.h>
 
 // Conversão UTF-8 <-> UTF-16 para interação com WinAPI Unicode
 static std::wstring Utf8ToW(const std::string& s) {
@@ -55,7 +56,8 @@ static HWND g_lblJumpPhys = NULL;
 static HWND g_lblJumpVirt = NULL;
 static HWND g_lblCrouchPhys = NULL;
 static HWND g_lblCrouchVirt = NULL;
-static HWND g_lblWeaponSwap = NULL;
+static HWND g_lblSuporte = NULL;  // Label "Suporte" clicável
+static HWND g_lblFooter = NULL;   // Label "KeyMapper by Geanswag"
 
 // Edits (Config aba)
 static HWND g_editTrigger = NULL;
@@ -69,12 +71,10 @@ static HWND g_editJumpPhys = NULL;
 static HWND g_editJumpVirt = NULL;
 static HWND g_editCrouchPhys = NULL;
 static HWND g_editCrouchVirt = NULL;
-static HWND g_editWeaponSwap = NULL;
 static HWND g_btnSelJumpPhys = NULL;
 static HWND g_btnSelJumpVirt = NULL;
 static HWND g_btnSelCrouchPhys = NULL;
 static HWND g_btnSelCrouchVirt = NULL;
-static HWND g_btnSelWeaponSwap = NULL;
 
 static AppConfig g_cfg;
 
@@ -140,7 +140,6 @@ static void UI_LoadToControls() {
 	SetWindowTextW(g_editJumpVirt, Utf8ToW(g_cfg.jump_virtual_key).c_str());
 	SetWindowTextW(g_editCrouchPhys, Utf8ToW(g_cfg.crouch_physical_key).c_str());
 	SetWindowTextW(g_editCrouchVirt, Utf8ToW(g_cfg.crouch_virtual_key).c_str());
-	if (g_editWeaponSwap) SetWindowTextW(g_editWeaponSwap, Utf8ToW(g_cfg.weapon_swap_key).c_str());
 	SetWindowTextW(g_statusText, L"Mapeamento ativo! Pressione a tecla de ativação para alternar.");
 }
 
@@ -152,9 +151,6 @@ static void UI_SaveFromControls() {
 	GetWindowTextW(g_editJumpVirt, wbuf, 256); g_cfg.jump_virtual_key = WToUtf8(wbuf);
 	GetWindowTextW(g_editCrouchPhys, wbuf, 256); g_cfg.crouch_physical_key = WToUtf8(wbuf);
 	GetWindowTextW(g_editCrouchVirt, wbuf, 256); g_cfg.crouch_virtual_key = WToUtf8(wbuf);
-	if (g_editWeaponSwap) {
-		GetWindowTextW(g_editWeaponSwap, wbuf, 256); g_cfg.weapon_swap_key = WToUtf8(wbuf);
-	}
 	// Configurações do sistema são lidas do arquivo config.json, não da UI
 	SaveConfig(g_cfg);
 	SetRunAtStartup(g_cfg.start_with_windows);
@@ -206,12 +202,18 @@ static void LayoutResize(RECT rc) {
 	if (g_lblCrouchVirt) MoveWindow(g_lblCrouchVirt, labelX, y + 3, labelW, h, TRUE);
 	if (g_editCrouchVirt) MoveWindow(g_editCrouchVirt, editX, y, editW, h, TRUE);
 	if (g_btnSelCrouchVirt) MoveWindow(g_btnSelCrouchVirt, btnX, y, btnW, h, TRUE);
-	y += h + 10;
+	y += h + 20;
 	
-	// Weapon Swap
-	if (g_lblWeaponSwap) MoveWindow(g_lblWeaponSwap, labelX, y + 3, labelW, h, TRUE);
-	if (g_editWeaponSwap) MoveWindow(g_editWeaponSwap, editX, y, editW, h, TRUE);
-	if (g_btnSelWeaponSwap) MoveWindow(g_btnSelWeaponSwap, btnX, y, btnW, h, TRUE);
+	// Footer - parte inferior
+	int footerY = rc.bottom - 25; // 25px do fundo
+	// Label "Suporte" à esquerda
+	if (g_lblSuporte) MoveWindow(g_lblSuporte, 15, footerY, 100, 20, TRUE);
+	// Label "KeyMapper by Geanswag" à direita
+	if (g_lblFooter) {
+		int footerWidth = 200;
+		int footerX = rc.right - footerWidth - 15; // 15px da margem direita
+		MoveWindow(g_lblFooter, footerX, footerY, footerWidth, 20, TRUE);
+	}
 }
 
 static void CreateControls(HWND hwnd) {
@@ -280,23 +282,31 @@ static void CreateControls(HWND hwnd) {
 	g_btnSelCrouchVirt = CreateWindowExW(0, L"BUTTON", L"Selecionar", WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,
 		btnX, y, btnW, h, hwnd, (HMENU)314, GetModuleHandle(NULL), NULL);
 	y += h + 10;
+
+	// Footer - Labels na parte inferior
+	// Label "Suporte" (clicável) à esquerda
+	g_lblSuporte = CreateWindowExW(0, L"STATIC", L"Suporte", 
+		WS_CHILD|WS_VISIBLE|SS_LEFT|SS_NOTIFY, 
+		15, WINDOW_HEIGHT - 40, 100, 20, hwnd, (HMENU)401, GetModuleHandle(NULL), NULL);
 	
-	// Weapon Swap
-	g_lblWeaponSwap = CreateWindowExW(0, L"STATIC", L"Tecla para Troca de Arma:", WS_CHILD|WS_VISIBLE|SS_LEFT,
-		labelX, y + 3, labelW, h, hwnd, NULL, GetModuleHandle(NULL), NULL);
-	g_editWeaponSwap = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD|WS_VISIBLE|ES_AUTOHSCROLL|ES_CENTER,
-		editX, y, editW, h, hwnd, (HMENU)305, GetModuleHandle(NULL), NULL);
-	g_btnSelWeaponSwap = CreateWindowExW(0, L"BUTTON", L"Selecionar", WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,
-		btnX, y, btnW, h, hwnd, (HMENU)315, GetModuleHandle(NULL), NULL);
+	// Label "KeyMapper by Geanswag" à direita
+	g_lblFooter = CreateWindowExW(0, L"STATIC", L"KeyMapper by Geanswag", 
+		WS_CHILD|WS_VISIBLE|SS_RIGHT,
+		WINDOW_WIDTH - 200, WINDOW_HEIGHT - 40, 185, 20, hwnd, (HMENU)402, GetModuleHandle(NULL), NULL);
 
 	// Aplicar fontes
 	HWND labels[] = { g_lblTrigger, g_lblHold, g_lblJumpPhys, g_lblJumpVirt, 
-		g_lblCrouchPhys, g_lblCrouchVirt, g_lblWeaponSwap };
+		g_lblCrouchPhys, g_lblCrouchVirt, g_lblSuporte, g_lblFooter };
 	for (HWND h : labels) if (h) ApplyLabelFont(h);
 	
+	// Estilizar label "Suporte" como link (cor azul)
+	if (g_lblSuporte) {
+		SetWindowLongPtr(g_lblSuporte, GWL_STYLE, GetWindowLongPtr(g_lblSuporte, GWL_STYLE) | SS_NOTIFY);
+	}
+	
 	HWND ctrls[] = { g_editTrigger, g_editHold, g_statusText, g_btnSelTrigger, g_btnSelHold,
-		g_editJumpPhys, g_editJumpVirt, g_editCrouchPhys, g_editCrouchVirt, g_editWeaponSwap,
-		g_btnSelJumpPhys, g_btnSelJumpVirt, g_btnSelCrouchPhys, g_btnSelCrouchVirt, g_btnSelWeaponSwap };
+		g_editJumpPhys, g_editJumpVirt, g_editCrouchPhys, g_editCrouchVirt,
+		g_btnSelJumpPhys, g_btnSelJumpVirt, g_btnSelCrouchPhys, g_btnSelCrouchVirt };
 	for (HWND h : ctrls) if (h) ApplyUIFont(h);
 }
 
@@ -322,14 +332,37 @@ static LRESULT CALLBACK UI_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 			if (id == 312) StartCapture(g_editJumpVirt);
 			if (id == 313) StartCapture(g_editCrouchPhys);
 			if (id == 314) StartCapture(g_editCrouchVirt);
-			if (id == 315 && g_editWeaponSwap) StartCapture(g_editWeaponSwap);
+		} else if (code == STN_CLICKED) {
+			// Label "Suporte" clicada - abrir Discord
+			if (id == 401) {
+				ShellExecuteW(NULL, L"open", L"https://discord.gg/JuEzkT4puD", NULL, NULL, SW_SHOWNORMAL);
+			}
 		}
 		return 0;
 	}
-	case WM_CTLCOLORSTATIC:
+	case WM_CTLCOLORSTATIC: {
+		HWND hwndCtrl = (HWND)lParam;
+		// Label "Suporte" tem cor de link (azul)
+		if (hwndCtrl == g_lblSuporte) {
+			SetTextColor((HDC)wParam, RGB(0, 120, 215)); // Azul Windows
+			SetBkColor((HDC)wParam, g_colBg);
+			return (LRESULT)g_brWnd;
+		}
 		SetTextColor((HDC)wParam, g_colText);
 		SetBkColor((HDC)wParam, g_colBg);
 		return (LRESULT)g_brWnd;
+	}
+	case WM_SETCURSOR: {
+		// Cursor de mão quando passar sobre a label "Suporte"
+		POINT pt;
+		GetCursorPos(&pt);
+		HWND hwndUnder = WindowFromPoint(pt);
+		if (hwndUnder == g_lblSuporte) {
+			SetCursor(LoadCursor(NULL, IDC_HAND));
+			return TRUE;
+		}
+		break;
+	}
 	case WM_CTLCOLORBTN:
 		SetTextColor((HDC)wParam, g_colText);
 		SetBkColor((HDC)wParam, g_colBtn);
@@ -398,7 +431,7 @@ HWND UI_Show(HINSTANCE hInstance, HWND owner) {
 	int y = (screenHeight - WINDOW_HEIGHT) / 2;
 	
 	// Criar janela com tamanho fixo MENOR
-	g_mainWnd = CreateWindowExW(WS_EX_APPWINDOW, cls, L"KeyMapper - Configurações",
+	g_mainWnd = CreateWindowExW(WS_EX_APPWINDOW, cls, L"KeyMapper - Lite",
 		WS_OVERLAPPEDWINDOW & ~(WS_MAXIMIZEBOX | WS_THICKFRAME), x, y, WINDOW_WIDTH, WINDOW_HEIGHT,
 		owner, NULL, hInstance, NULL);
 	

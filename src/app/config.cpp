@@ -166,7 +166,6 @@ bool LoadConfig(AppConfig& cfg) {
 	if (ExtractString(json, "jump_virtual_key", s)) cfg.jump_virtual_key = Trim(s);
 	if (ExtractString(json, "crouch_physical_key", s)) cfg.crouch_physical_key = Trim(s);
 	if (ExtractString(json, "crouch_virtual_key", s)) cfg.crouch_virtual_key = Trim(s);
-	if (ExtractString(json, "weapon_swap_key", s)) cfg.weapon_swap_key = Trim(s);
 
 	return true;
 }
@@ -182,7 +181,6 @@ bool SaveConfig(const AppConfig& cfg) {
 	f << "  \"jump_virtual_key\": \"" << cfg.jump_virtual_key << "\",\n";
 	f << "  \"crouch_physical_key\": \"" << cfg.crouch_physical_key << "\",\n";
 	f << "  \"crouch_virtual_key\": \"" << cfg.crouch_virtual_key << "\",\n";
-	f << "  \"weapon_swap_key\": \"" << cfg.weapon_swap_key << "\",\n";
 	f << "  \"start_with_windows\": " << (cfg.start_with_windows ? "true" : "false") << ",\n";
 	f << "  \"start_minimized\": " << (cfg.start_minimized ? "true" : "false") << "\n";
 	f << "}\n";

@@ -24,10 +24,6 @@ static int VK_CROUCH_VIRT = 0;
 static int VK_TRIGGER = 0;
 static int VK_HOLD1 = 0; // W
 static int VK_HOLD2 = 0; // user key
-static int VK_WEAPON_SWAP = 0; // weapon swap key
-
-// Weapon swap tracking (última arma 1-4)
-static std::atomic<int> g_lastWeaponKey{0};
 
 // W temporary disable state (ms)
 static std::atomic<int> g_wDisabled{0};
@@ -53,8 +49,6 @@ static const UINT WM_TIMER_MOUSE_HOLD = WM_APP + 101;
 // Timer for hold2 key check (50ms)
 static UINT_PTR g_holdTimer = 0;
 static UINT_PTR g_jumpTimer = 0;
-static UINT_PTR g_weaponSwapTimer = 0;
-static std::atomic<int> g_pendingWeaponKey{0};
 
 static int toLower(int c) { return (c >= 'A' && c <= 'Z') ? (c - 'A' + 'a') : c; }
 
@@ -270,38 +264,9 @@ static LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 		if (nCode == HC_ACTION) {
 		KBDLLHOOKSTRUCT* p = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
 		if (!(p->flags & 0x10)) { // not injected
-			
-			// Rastrear teclas de arma (1, 2, 3, 4) - SEMPRE, independente do estado ativo
-			// Isso garante que a última arma seja salva mesmo se outras teclas forem pressionadas depois
-			if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
-				if ((int)p->vkCode >= '1' && (int)p->vkCode <= '4') {
-					g_lastWeaponKey.store((int)p->vkCode);
-					// Não retorna aqui, deixa passar para o jogo também
-				}
-			}
-			
 			if (g_isActive.load()) {
 
 				if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
-					
-					// Weapon swap: SEMPRE reapertar última arma, mesmo com múltiplos cliques
-					if ((int)p->vkCode == VK_WEAPON_SWAP && VK_WEAPON_SWAP != 0) {
-						int lastWeapon = g_lastWeaponKey.load();
-						if (lastWeapon >= '1' && lastWeapon <= '4') {
-							// Cada clique processa completamente - press imediato, release via timer
-							// Múltiplos cliques: cada um faz seu press e agenda seu release separadamente
-							press_vk(lastWeapon);
-							
-							// Agendar release após delay (sem bloquear hook thread)
-							g_pendingWeaponKey.store(lastWeapon);
-							// Cancelar timer anterior e criar novo (cada clique tem seu ciclo)
-							if (g_weaponSwapTimer) {
-								KillTimer(NULL, g_weaponSwapTimer);
-							}
-							g_weaponSwapTimer = SetTimer(NULL, 0, 35, NULL);
-						}
-						return 1; // Interceptar a tecla weapon swap
-					}
 					
 					// Trigger: ativa hold (não alterna)
                     if ((int)p->vkCode == VK_TRIGGER) {
@@ -477,18 +442,6 @@ static DWORD WINAPI HookThread(LPVOID) {
 		if (msg.message == WM_TIMER && msg.wParam == g_mouseTimer) {
 			check_mouse_hold();
 		}
-        // Check for weapon swap timer - release da tecla após delay
-		if (msg.message == WM_TIMER && msg.wParam == g_weaponSwapTimer) {
-			int weaponKey = g_pendingWeaponKey.load();
-			if (weaponKey >= '1' && weaponKey <= '4') {
-				// Release da última tecla pressionada
-				release_vk(weaponKey);
-			}
-			if (g_weaponSwapTimer) {
-				KillTimer(NULL, g_weaponSwapTimer);
-				g_weaponSwapTimer = 0;
-			}
-		}
         // Check for end of jump delay and apply pending hold
         if (msg.message == WM_TIMER && msg.wParam == g_jumpTimer) {
             if (!is_jump_delay_active()) {
@@ -534,10 +487,6 @@ static DWORD WINAPI HookThread(LPVOID) {
 		KillTimer(NULL, g_jumpTimer);
 		g_jumpTimer = 0;
 	}
-	if (g_weaponSwapTimer) {
-		KillTimer(NULL, g_weaponSwapTimer);
-		g_weaponSwapTimer = 0;
-	}
 	return 0;
 }
 
@@ -579,10 +528,6 @@ void stop_hook() {
 	if (g_jumpTimer) {
 		KillTimer(NULL, g_jumpTimer);
 		g_jumpTimer = 0;
-	}
-	if (g_weaponSwapTimer) {
-		KillTimer(NULL, g_weaponSwapTimer);
-		g_weaponSwapTimer = 0;
 	}
 }
 
@@ -627,8 +572,7 @@ void configure_keys(const char* jump_phys,
 					const char* crouch_virt,
 					const char* trigger,
 					const char* hold1,
-					const char* hold2,
-					const char* weapon_swap) {
+					const char* hold2) {
 	// Verificação de proteção
 	if (ANTI_DEBUG_CHECK()) {
 		JUNK_CODE();
@@ -645,7 +589,6 @@ void configure_keys(const char* jump_phys,
 	VK_TRIGGER = get_vk_code(trigger);
 	VK_HOLD1 = get_vk_code(hold1);
 	VK_HOLD2 = get_vk_code(hold2);
-	VK_WEAPON_SWAP = get_vk_code(weapon_swap);
 }
 
 }
