@@ -59,7 +59,7 @@ static HWND g_btnSelWeaponSwap = NULL;
 static AppConfig g_cfg;
 
 // Tema moderno - Cores inspiradas em Windows 11 e Material Design
-static HBRUSH g_brWnd = NULL, g_brEdit = NULL, g_brBtn = NULL, g_brTab = NULL;
+static HBRUSH g_brWnd = NULL, g_brEdit = NULL, g_brBtn = NULL;
 static COLORREF g_colBg = RGB(32, 32, 32);           // Fundo escuro moderno
 static COLORREF g_colCtrl = RGB(45, 45, 45);         // Controles
 static COLORREF g_colEdit = RGB(55, 55, 55);         // Campos de entrada
@@ -297,33 +297,41 @@ static LRESULT CALLBACK UI_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 }
 
 HWND UI_Show(HINSTANCE hInstance, HWND owner) {
-	if (g_mainWnd) {
+	if (g_mainWnd && IsWindow(g_mainWnd)) {
 		ShowWindow(g_mainWnd, SW_SHOW);
 		SetForegroundWindow(g_mainWnd);
 		return g_mainWnd;
 	}
 	const wchar_t* cls = L"KeyMapperUIWnd";
-	WNDCLASSEXW wc{}; 
-	wc.cbSize = sizeof(WNDCLASSEXW);
-	wc.lpfnWndProc = UI_WndProc; 
-	wc.hInstance = hInstance; 
-	wc.lpszClassName = cls;
-	wc.hbrBackground = NULL;
 	
-	// Carregar ícone personalizado para a janela
-	HICON hIcon = (HICON)LoadImage(NULL, L"imagens\\logo.ico", IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
-	if (hIcon) {
-		wc.hIcon = hIcon;
-		wc.hIconSm = hIcon;
+	// Verificar se a classe já foi registrada
+	WNDCLASSEXW wc;
+	if (!GetClassInfoExW(hInstance, cls, &wc)) {
+		// Registrar a classe apenas se não existir
+		WNDCLASSEXW wcNew{}; 
+		wcNew.cbSize = sizeof(WNDCLASSEXW);
+		wcNew.lpfnWndProc = UI_WndProc; 
+		wcNew.hInstance = hInstance; 
+		wcNew.lpszClassName = cls;
+		wcNew.hbrBackground = NULL;
+		wcNew.style = CS_HREDRAW | CS_VREDRAW;
+		
+		// Carregar ícone personalizado para a janela
+		HICON hIcon = (HICON)LoadImage(NULL, L"imagens\\logo.ico", IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+		if (hIcon) {
+			wcNew.hIcon = hIcon;
+			wcNew.hIconSm = hIcon;
+		}
+		
+		if (!RegisterClassExW(&wcNew)) {
+			// Se falhar, pode ser que já exista - continuar mesmo assim
+		}
 	}
-	
-	RegisterClassExW(&wc);
 	
 	// Criar brushes para o tema moderno
 	if (!g_brWnd) g_brWnd = CreateSolidBrush(g_colBg);
 	if (!g_brEdit) g_brEdit = CreateSolidBrush(g_colEdit);
 	if (!g_brBtn) g_brBtn = CreateSolidBrush(g_colBtn);
-	if (!g_brTab) g_brTab = CreateSolidBrush(g_colCtrl);
 	
 	// Calcular posição central da tela
 	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -336,9 +344,17 @@ HWND UI_Show(HINSTANCE hInstance, HWND owner) {
 		WS_OVERLAPPEDWINDOW & ~(WS_MAXIMIZEBOX | WS_THICKFRAME), x, y, WINDOW_WIDTH, WINDOW_HEIGHT,
 		owner, NULL, hInstance, NULL);
 	
+	if (!g_mainWnd) {
+		return NULL;
+	}
+	
 	// Habilitar dark mode no título (Windows 10/11)
 	BOOL value = TRUE;
 	DwmSetWindowAttribute(g_mainWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
+	
+	// Exibir a janela
+	ShowWindow(g_mainWnd, SW_SHOW);
+	UpdateWindow(g_mainWnd);
 	
 	return g_mainWnd;
 }
