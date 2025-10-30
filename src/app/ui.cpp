@@ -27,15 +27,35 @@ static void ApplyUIFont(HWND hwnd) {
 	static HFONT hFont = NULL;
 	if (!hFont) {
 		LOGFONTW lf{};
-		lf.lfHeight = -16; // ~12pt
+		lf.lfHeight = -14; // ~10pt (menor)
 		wcscpy_s(lf.lfFaceName, L"Segoe UI");
 		hFont = CreateFontIndirectW(&lf);
 	}
 	SendMessage(hwnd, WM_SETFONT, (WPARAM)hFont, TRUE);
 }
 
+static void ApplyLabelFont(HWND hwnd) {
+	static HFONT hLabelFont = NULL;
+	if (!hLabelFont) {
+		LOGFONTW lf{};
+		lf.lfHeight = -13; // ~9pt
+		wcscpy_s(lf.lfFaceName, L"Segoe UI");
+		hLabelFont = CreateFontIndirectW(&lf);
+	}
+	SendMessage(hwnd, WM_SETFONT, (WPARAM)hLabelFont, TRUE);
+}
+
 // Controles
 static HWND g_mainWnd = NULL;
+
+// Labels
+static HWND g_lblTrigger = NULL;
+static HWND g_lblHold = NULL;
+static HWND g_lblJumpPhys = NULL;
+static HWND g_lblJumpVirt = NULL;
+static HWND g_lblCrouchPhys = NULL;
+static HWND g_lblCrouchVirt = NULL;
+static HWND g_lblWeaponSwap = NULL;
 
 // Edits (Config aba)
 static HWND g_editTrigger = NULL;
@@ -74,8 +94,8 @@ static HWND g_captureTarget = NULL;
 static HHOOK g_capHook = NULL;
 
 // Dimensões fixas da janela - MENOR
-static const int WINDOW_WIDTH = 600;
-static const int WINDOW_HEIGHT = 500; // Aumentado para acomodar todos os controles em uma única página
+static const int WINDOW_WIDTH = 480;
+static const int WINDOW_HEIGHT = 450;
 
 static LRESULT CALLBACK CaptureKbProc(int nCode, WPARAM wParam, LPARAM lParam) {
 	if (nCode == HC_ACTION && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)) {
@@ -141,107 +161,143 @@ static void UI_SaveFromControls() {
 }
 
 static void LayoutResize(RECT rc) {
-	int padding = 20; // Padding menor para janela menor
-	int startY = padding + 20; // Começar após o padding superior
+	// Layout compacto com labels - manter posições fixas (não redimensionar)
+	int startY = 15;
+	int labelX = 15, editX = 180, btnX = 340;
+	int y = startY;
+	int labelW = 155, editW = 140, btnW = 90;
+	int h = 26;
 	
-	int x = padding + 24, y = startY, w = 200, h = 32; // Controles menores
+	// Configurações principais - Trigger
+	if (g_lblTrigger) MoveWindow(g_lblTrigger, labelX, y + 3, labelW, h, TRUE);
+	if (g_editTrigger) MoveWindow(g_editTrigger, editX, y, editW, h, TRUE);
+	if (g_btnSelTrigger) MoveWindow(g_btnSelTrigger, btnX, y, btnW, h, TRUE);
+	y += h + 10;
 	
-	// Configurações principais
-	MoveWindow(g_editTrigger, x, y, w, h, TRUE);
-	MoveWindow(g_btnSelTrigger, x + w + 12, y, 100, h, TRUE);
-	y += h + 16;
+	// Hold
+	if (g_lblHold) MoveWindow(g_lblHold, labelX, y + 3, labelW, h, TRUE);
+	if (g_editHold) MoveWindow(g_editHold, editX, y, editW, h, TRUE);
+	if (g_btnSelHold) MoveWindow(g_btnSelHold, btnX, y, btnW, h, TRUE);
+	y += h + 18;
 	
-	MoveWindow(g_editHold, x, y, w, h, TRUE);
-	MoveWindow(g_btnSelHold, x + w + 12, y, 100, h, TRUE);
-	y += h + 24;
-	
-	MoveWindow(g_statusText, x, y, w + 112, h, TRUE);
-	y += h + 32;
+	// Status
+	if (g_statusText) MoveWindow(g_statusText, labelX, y, labelW + editW + btnW + 10, h, TRUE);
+	y += h + 20;
 
-	// Teclas Extras - Pulo
-	MoveWindow(g_editJumpPhys, x, y, w, h, TRUE);
-	MoveWindow(g_btnSelJumpPhys, x + w + 12, y, 100, h, TRUE);
-	y += h + 16;
+	// Teclas Extras - Pulo Físico
+	if (g_lblJumpPhys) MoveWindow(g_lblJumpPhys, labelX, y + 3, labelW, h, TRUE);
+	if (g_editJumpPhys) MoveWindow(g_editJumpPhys, editX, y, editW, h, TRUE);
+	if (g_btnSelJumpPhys) MoveWindow(g_btnSelJumpPhys, btnX, y, btnW, h, TRUE);
+	y += h + 10;
 	
-	MoveWindow(g_editJumpVirt, x, y, w, h, TRUE);
-	MoveWindow(g_btnSelJumpVirt, x + w + 12, y, 100, h, TRUE);
-	y += h + 16;
+	// Pulo Virtual
+	if (g_lblJumpVirt) MoveWindow(g_lblJumpVirt, labelX, y + 3, labelW, h, TRUE);
+	if (g_editJumpVirt) MoveWindow(g_editJumpVirt, editX, y, editW, h, TRUE);
+	if (g_btnSelJumpVirt) MoveWindow(g_btnSelJumpVirt, btnX, y, btnW, h, TRUE);
+	y += h + 10;
 	
-	// Teclas Extras - Agachar
-	MoveWindow(g_editCrouchPhys, x, y, w, h, TRUE);
-	MoveWindow(g_btnSelCrouchPhys, x + w + 12, y, 100, h, TRUE);
-	y += h + 16;
+	// Agachar Físico
+	if (g_lblCrouchPhys) MoveWindow(g_lblCrouchPhys, labelX, y + 3, labelW, h, TRUE);
+	if (g_editCrouchPhys) MoveWindow(g_editCrouchPhys, editX, y, editW, h, TRUE);
+	if (g_btnSelCrouchPhys) MoveWindow(g_btnSelCrouchPhys, btnX, y, btnW, h, TRUE);
+	y += h + 10;
 	
-	MoveWindow(g_editCrouchVirt, x, y, w, h, TRUE);
-	MoveWindow(g_btnSelCrouchVirt, x + w + 12, y, 100, h, TRUE);
-	y += h + 16;
+	// Agachar Virtual
+	if (g_lblCrouchVirt) MoveWindow(g_lblCrouchVirt, labelX, y + 3, labelW, h, TRUE);
+	if (g_editCrouchVirt) MoveWindow(g_editCrouchVirt, editX, y, editW, h, TRUE);
+	if (g_btnSelCrouchVirt) MoveWindow(g_btnSelCrouchVirt, btnX, y, btnW, h, TRUE);
+	y += h + 10;
 	
-	// Teclas Extras - Weapon Swap
-	if (g_editWeaponSwap) {
-		MoveWindow(g_editWeaponSwap, x, y, w, h, TRUE);
-		MoveWindow(g_btnSelWeaponSwap, x + w + 12, y, 100, h, TRUE);
-	}
+	// Weapon Swap
+	if (g_lblWeaponSwap) MoveWindow(g_lblWeaponSwap, labelX, y + 3, labelW, h, TRUE);
+	if (g_editWeaponSwap) MoveWindow(g_editWeaponSwap, editX, y, editW, h, TRUE);
+	if (g_btnSelWeaponSwap) MoveWindow(g_btnSelWeaponSwap, btnX, y, btnW, h, TRUE);
 }
 
 static void CreateControls(HWND hwnd) {
-	// Todas as configurações em uma única página - posições iniciais
-	int startY = 20;
-	int x = 44, y = startY, w = 200, h = 32;
+	// Layout compacto com labels explicativos
+	int startY = 15;
+	int labelX = 15, editX = 180, btnX = 340;
+	int y = startY;
+	int labelW = 155, editW = 140, btnW = 90;
+	int h = 26; // Altura menor
 	
-	// Configurações principais
+	// Configurações principais - Trigger
+	g_lblTrigger = CreateWindowExW(0, L"STATIC", L"Tecla de Ativação:", WS_CHILD|WS_VISIBLE|SS_LEFT,
+		labelX, y + 3, labelW, h, hwnd, NULL, GetModuleHandle(NULL), NULL);
 	g_editTrigger = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD|WS_VISIBLE|ES_AUTOHSCROLL|ES_CENTER,
-		x, y, w, h, hwnd, (HMENU)201, GetModuleHandle(NULL), NULL);
+		editX, y, editW, h, hwnd, (HMENU)201, GetModuleHandle(NULL), NULL);
 	g_btnSelTrigger = CreateWindowExW(0, L"BUTTON", L"Selecionar", WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,
-		x + w + 12, y, 100, h, hwnd, (HMENU)211, GetModuleHandle(NULL), NULL);
-	y += h + 16;
+		btnX, y, btnW, h, hwnd, (HMENU)211, GetModuleHandle(NULL), NULL);
+	y += h + 10;
 	
+	// Hold
+	g_lblHold = CreateWindowExW(0, L"STATIC", L"Tecla de Segurar:", WS_CHILD|WS_VISIBLE|SS_LEFT,
+		labelX, y + 3, labelW, h, hwnd, NULL, GetModuleHandle(NULL), NULL);
 	g_editHold = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD|WS_VISIBLE|ES_AUTOHSCROLL|ES_CENTER,
-		x, y, w, h, hwnd, (HMENU)202, GetModuleHandle(NULL), NULL);
+		editX, y, editW, h, hwnd, (HMENU)202, GetModuleHandle(NULL), NULL);
 	g_btnSelHold = CreateWindowExW(0, L"BUTTON", L"Selecionar", WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,
-		x + w + 12, y, 100, h, hwnd, (HMENU)212, GetModuleHandle(NULL), NULL);
-	y += h + 24;
+		btnX, y, btnW, h, hwnd, (HMENU)212, GetModuleHandle(NULL), NULL);
+	y += h + 18;
 	
+	// Status
 	g_statusText = CreateWindowExW(0, L"STATIC", L"", WS_CHILD|WS_VISIBLE|SS_CENTER,
-		x, y, w + 112, h, hwnd, (HMENU)203, GetModuleHandle(NULL), NULL);
-	y += h + 32;
+		labelX, y, labelW + editW + btnW + 10, h, hwnd, (HMENU)203, GetModuleHandle(NULL), NULL);
+	y += h + 20;
 
-	// Teclas Extras - Pulo
+	// Teclas Extras - Pulo Físico
+	g_lblJumpPhys = CreateWindowExW(0, L"STATIC", L"Tecla Física de Pulo:", WS_CHILD|WS_VISIBLE|SS_LEFT,
+		labelX, y + 3, labelW, h, hwnd, NULL, GetModuleHandle(NULL), NULL);
 	g_editJumpPhys = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD|WS_VISIBLE|ES_AUTOHSCROLL|ES_CENTER,
-		x, y, w, h, hwnd, (HMENU)301, GetModuleHandle(NULL), NULL);
+		editX, y, editW, h, hwnd, (HMENU)301, GetModuleHandle(NULL), NULL);
 	g_btnSelJumpPhys = CreateWindowExW(0, L"BUTTON", L"Selecionar", WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,
-		x + w + 12, y, 100, h, hwnd, (HMENU)311, GetModuleHandle(NULL), NULL);
-	y += h + 16;
+		btnX, y, btnW, h, hwnd, (HMENU)311, GetModuleHandle(NULL), NULL);
+	y += h + 10;
 	
+	// Pulo Virtual
+	g_lblJumpVirt = CreateWindowExW(0, L"STATIC", L"Tecla Virtual de Pulo:", WS_CHILD|WS_VISIBLE|SS_LEFT,
+		labelX, y + 3, labelW, h, hwnd, NULL, GetModuleHandle(NULL), NULL);
 	g_editJumpVirt = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD|WS_VISIBLE|ES_AUTOHSCROLL|ES_CENTER,
-		x, y, w, h, hwnd, (HMENU)302, GetModuleHandle(NULL), NULL);
+		editX, y, editW, h, hwnd, (HMENU)302, GetModuleHandle(NULL), NULL);
 	g_btnSelJumpVirt = CreateWindowExW(0, L"BUTTON", L"Selecionar", WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,
-		x + w + 12, y, 100, h, hwnd, (HMENU)312, GetModuleHandle(NULL), NULL);
-	y += h + 16;
+		btnX, y, btnW, h, hwnd, (HMENU)312, GetModuleHandle(NULL), NULL);
+	y += h + 10;
 	
-	// Teclas Extras - Agachar
+	// Agachar Físico
+	g_lblCrouchPhys = CreateWindowExW(0, L"STATIC", L"Tecla Física de Agachar:", WS_CHILD|WS_VISIBLE|SS_LEFT,
+		labelX, y + 3, labelW, h, hwnd, NULL, GetModuleHandle(NULL), NULL);
 	g_editCrouchPhys = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD|WS_VISIBLE|ES_AUTOHSCROLL|ES_CENTER,
-		x, y, w, h, hwnd, (HMENU)303, GetModuleHandle(NULL), NULL);
+		editX, y, editW, h, hwnd, (HMENU)303, GetModuleHandle(NULL), NULL);
 	g_btnSelCrouchPhys = CreateWindowExW(0, L"BUTTON", L"Selecionar", WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,
-		x + w + 12, y, 100, h, hwnd, (HMENU)313, GetModuleHandle(NULL), NULL);
-	y += h + 16;
+		btnX, y, btnW, h, hwnd, (HMENU)313, GetModuleHandle(NULL), NULL);
+	y += h + 10;
 	
+	// Agachar Virtual
+	g_lblCrouchVirt = CreateWindowExW(0, L"STATIC", L"Tecla Virtual de Agachar:", WS_CHILD|WS_VISIBLE|SS_LEFT,
+		labelX, y + 3, labelW, h, hwnd, NULL, GetModuleHandle(NULL), NULL);
 	g_editCrouchVirt = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD|WS_VISIBLE|ES_AUTOHSCROLL|ES_CENTER,
-		x, y, w, h, hwnd, (HMENU)304, GetModuleHandle(NULL), NULL);
+		editX, y, editW, h, hwnd, (HMENU)304, GetModuleHandle(NULL), NULL);
 	g_btnSelCrouchVirt = CreateWindowExW(0, L"BUTTON", L"Selecionar", WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,
-		x + w + 12, y, 100, h, hwnd, (HMENU)314, GetModuleHandle(NULL), NULL);
-	y += h + 16;
+		btnX, y, btnW, h, hwnd, (HMENU)314, GetModuleHandle(NULL), NULL);
+	y += h + 10;
 	
-	// Teclas Extras - Weapon Swap
+	// Weapon Swap
+	g_lblWeaponSwap = CreateWindowExW(0, L"STATIC", L"Tecla para Troca de Arma:", WS_CHILD|WS_VISIBLE|SS_LEFT,
+		labelX, y + 3, labelW, h, hwnd, NULL, GetModuleHandle(NULL), NULL);
 	g_editWeaponSwap = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD|WS_VISIBLE|ES_AUTOHSCROLL|ES_CENTER,
-		x, y, w, h, hwnd, (HMENU)305, GetModuleHandle(NULL), NULL);
+		editX, y, editW, h, hwnd, (HMENU)305, GetModuleHandle(NULL), NULL);
 	g_btnSelWeaponSwap = CreateWindowExW(0, L"BUTTON", L"Selecionar", WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,
-		x + w + 12, y, 100, h, hwnd, (HMENU)315, GetModuleHandle(NULL), NULL);
+		btnX, y, btnW, h, hwnd, (HMENU)315, GetModuleHandle(NULL), NULL);
 
-	// Aplicar fonte Segoe UI em todos os controles
-	HWND ctrls1[] = { g_editTrigger, g_editHold, g_statusText, g_btnSelTrigger, g_btnSelHold,
+	// Aplicar fontes
+	HWND labels[] = { g_lblTrigger, g_lblHold, g_lblJumpPhys, g_lblJumpVirt, 
+		g_lblCrouchPhys, g_lblCrouchVirt, g_lblWeaponSwap };
+	for (HWND h : labels) if (h) ApplyLabelFont(h);
+	
+	HWND ctrls[] = { g_editTrigger, g_editHold, g_statusText, g_btnSelTrigger, g_btnSelHold,
 		g_editJumpPhys, g_editJumpVirt, g_editCrouchPhys, g_editCrouchVirt, g_editWeaponSwap,
 		g_btnSelJumpPhys, g_btnSelJumpVirt, g_btnSelCrouchPhys, g_btnSelCrouchVirt, g_btnSelWeaponSwap };
-	for (HWND h : ctrls1) if (h) ApplyUIFont(h);
+	for (HWND h : ctrls) if (h) ApplyUIFont(h);
 }
 
 
@@ -291,6 +347,8 @@ static LRESULT CALLBACK UI_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 		UI_SaveFromControls();
 		DestroyWindow(hwnd);
 		g_mainWnd = NULL;
+		// Fechar o programa completamente quando a janela de config for fechada
+		PostQuitMessage(0);
 		return 0;
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);

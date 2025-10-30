@@ -11,7 +11,6 @@ struct AppConfig {
 	std::string weapon_swap_key;
 	bool start_with_windows = false;
 	bool start_minimized = false;
-	bool only_bluestacks = true;
 };
 
 bool LoadConfig(AppConfig& cfg);

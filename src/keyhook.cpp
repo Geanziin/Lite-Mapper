@@ -13,8 +13,6 @@ static HANDLE g_thread = nullptr;
 static DWORD g_threadId = 0;
 static std::atomic<int> g_isActive{0};
 static std::atomic<int> g_keysHeld{0};
-static std::atomic<int> g_restrictToEmulators{1};
-static std::atomic<int> g_isEmuForeground{0};
 static std::atomic<int> g_hold2PhysDown{0};
 static std::atomic<int> g_pendingHold{0};
 
@@ -51,9 +49,6 @@ static const UINT WM_TIMER_W_REENABLE = WM_APP + 100;
 // Timer for mouse hold check
 static UINT_PTR g_mouseTimer = 0;
 static const UINT WM_TIMER_MOUSE_HOLD = WM_APP + 101;
-
-// Timer for emulator foreground check
-static UINT_PTR g_emuTimer = 0;
 
 // Timer for hold2 key check (50ms)
 static UINT_PTR g_holdTimer = 0;
@@ -155,24 +150,6 @@ static int get_vk_code(const char* key) {
 	#endif
 	
 	return 0;
-}
-
-static bool is_target_emulator_window() {
-	HWND hwnd = GetForegroundWindow();
-	if (!hwnd) return false;
-	wchar_t title[256] = {0};
-	wchar_t cls[256] = {0};
-	GetWindowTextW(hwnd, title, 255);
-	GetClassNameW(hwnd, cls, 255);
-	auto has = [](const wchar_t* hay, const wchar_t* needle){ return hay && wcsstr(hay, needle) != nullptr; };
-	// Restringir somente ao BlueStacks
-	if (has(title, L"BlueStacks") || has(title, L"HD-Player")) return true;
-	if (has(cls, L"BlueStacks") || has(cls, L"HD-Player")) return true;
-	return false;
-}
-
-static void update_emu_foreground() {
-    g_isEmuForeground.store(is_target_emulator_window() ? 1 : 0);
 }
 
 static void press_vk(int vk) {
@@ -304,9 +281,6 @@ static LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 			}
 			
 			if (g_isActive.load()) {
-				if (g_restrictToEmulators.load() && !g_isEmuForeground.load()) {
-					return CallNextHookEx(g_keyboardHook, nCode, wParam, lParam);
-				}
 
 				if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
 					
@@ -391,9 +365,6 @@ static LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
 			int vkBtn = (xbCode == XBUTTON1) ? VK_XBUTTON1 : VK_XBUTTON2;
 			bool isDown = (wParam == WM_XBUTTONDOWN);
 			if (g_isActive.load()) {
-				if (g_restrictToEmulators.load() && !g_isEmuForeground.load()) {
-					return CallNextHookEx(g_mouseHook, nCode, wParam, lParam);
-				}
 				if (isDown) {
 					// Trigger via botão lateral
                     if (vkBtn == VK_TRIGGER) {
@@ -496,11 +467,6 @@ static DWORD WINAPI HookThread(LPVOID) {
 	HINSTANCE hInstance = GetModuleHandle(NULL);
 	g_keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardProc, hInstance, 0);
 	g_mouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseProc, hInstance, 0);
-	// Iniciar estado do emulador e timer periódico
-	update_emu_foreground();
-	if (!g_emuTimer) {
-		g_emuTimer = SetTimer(NULL, 0, 150, NULL);
-	}
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
 		// Check for timer messages to re-enable W
@@ -536,10 +502,6 @@ static DWORD WINAPI HookThread(LPVOID) {
                 g_isJumping.store(0);
             }
         }
-		// Atualiza cache de janela de emulador
-		if (msg.message == WM_TIMER && msg.wParam == g_emuTimer) {
-			update_emu_foreground();
-		}
 		// Verifica estado de HOLD2 a cada 50ms
 		if (msg.message == WM_TIMER && msg.wParam == g_holdTimer) {
 			if (g_keysHeld.load()) {
@@ -563,10 +525,6 @@ static DWORD WINAPI HookThread(LPVOID) {
 	if (g_mouseTimer) {
 		KillTimer(NULL, g_mouseTimer);
 		g_mouseTimer = 0;
-	}
-	if (g_emuTimer) {
-		KillTimer(NULL, g_emuTimer);
-		g_emuTimer = 0;
 	}
 	if (g_holdTimer) {
 		KillTimer(NULL, g_holdTimer);
@@ -614,10 +572,6 @@ void stop_hook() {
 		KillTimer(NULL, g_mouseTimer);
 		g_mouseTimer = 0;
 	}
-	if (g_emuTimer) {
-		KillTimer(NULL, g_emuTimer);
-		g_emuTimer = 0;
-	}
 	if (g_holdTimer) {
 		KillTimer(NULL, g_holdTimer);
 		g_holdTimer = 0;
@@ -662,13 +616,9 @@ void set_hold(int hold) {
 }
 
 void set_restrict_to_emulators(int restrict_flag) {
-	// Verificação de proteção
-	if (ANTI_DEBUG_CHECK()) {
-		JUNK_CODE();
-		return;
-	}
-	
-	g_restrictToEmulators.store(restrict_flag ? 1 : 0);
+	// Função mantida para compatibilidade, mas não faz nada
+	// O programa agora funciona globalmente em todas as aplicações
+	(void)restrict_flag; // Evitar warning de parâmetro não usado
 }
 
 void configure_keys(const char* jump_phys,

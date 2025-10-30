@@ -167,9 +167,7 @@ bool LoadConfig(AppConfig& cfg) {
 	if (ExtractString(json, "crouch_physical_key", s)) cfg.crouch_physical_key = Trim(s);
 	if (ExtractString(json, "crouch_virtual_key", s)) cfg.crouch_virtual_key = Trim(s);
 	if (ExtractString(json, "weapon_swap_key", s)) cfg.weapon_swap_key = Trim(s);
-	if (ExtractBool(json, "start_with_windows", b)) cfg.start_with_windows = b;
-	if (ExtractBool(json, "start_minimized", b)) cfg.start_minimized = b;
-	if (ExtractBool(json, "only_bluestacks", b)) cfg.only_bluestacks = b;
+
 	return true;
 }
 
@@ -186,8 +184,7 @@ bool SaveConfig(const AppConfig& cfg) {
 	f << "  \"crouch_virtual_key\": \"" << cfg.crouch_virtual_key << "\",\n";
 	f << "  \"weapon_swap_key\": \"" << cfg.weapon_swap_key << "\",\n";
 	f << "  \"start_with_windows\": " << (cfg.start_with_windows ? "true" : "false") << ",\n";
-	f << "  \"start_minimized\": " << (cfg.start_minimized ? "true" : "false") << ",\n";
-	f << "  \"only_bluestacks\": " << (cfg.only_bluestacks ? "true" : "false") << "\n";
+	f << "  \"start_minimized\": " << (cfg.start_minimized ? "true" : "false") << "\n";
 	f << "}\n";
 	return true;
 }

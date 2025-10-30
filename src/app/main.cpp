@@ -18,23 +18,7 @@ static const wchar_t* MUTEX_NAME = L"Global\\KeyMapperSingleInstance";
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
 		case WM_CREATE: {
-			// Add tray icon
-			nid.cbSize = sizeof(NOTIFYICONDATA);
-			nid.hWnd = hwnd;
-			nid.uID = 1;
-			nid.uFlags = NIF_MESSAGE | NIF_TIP | NIF_ICON;
-			nid.uCallbackMessage = WM_TRAYICON;
-			
-			// Carregar ícone personalizado
-			HICON hIcon = (HICON)LoadImage(NULL, L"imagens\\logo.ico", IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
-			if (!hIcon) {
-				// Fallback para ícone padrão se não encontrar o arquivo
-				hIcon = LoadIcon(NULL, IDI_APPLICATION);
-			}
-			nid.hIcon = hIcon;
-			
-			lstrcpyn(nid.szTip, L"KeyMapper", ARRAYSIZE(nid.szTip));
-			Shell_NotifyIcon(NIM_ADD, &nid);
+			// Não adicionar tray icon - janela será mostrada diretamente
 			return 0;
 		}
 		case WM_TRAYICON: {
@@ -64,7 +48,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return 0;
 		}
 		case WM_CLOSE: {
-			Shell_NotifyIcon(NIM_DELETE, &nid);
+			// Remover tray icon se existir
+			if (nid.cbSize > 0) {
+				Shell_NotifyIcon(NIM_DELETE, &nid);
+			}
 			DestroyWindow(hwnd);
 			return 0;
 		}
@@ -159,7 +146,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
 	JUNK_CODE();
 	
 	start_hook();
-	set_restrict_to_emulators(1);
 	
 	// Ativa mapeamento se config estiver com trigger e pelo menos uma tecla do usuário
 	if (!trigger_key.empty() && !hold_key.empty()) {
@@ -171,13 +157,12 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
 	RegisterClass(&wc);
 	HWND hwnd = CreateWindowEx(0, clsName, L"KeyMapper", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 300, 200, NULL, NULL, hInstance, NULL);
 	
-	// Verificar se foi iniciado automaticamente e se deve iniciar minimizado
-	bool isAutoStart = lpCmdLine && wcsstr(lpCmdLine, L"--autostart") != nullptr;
-	if (cfg.start_minimized && isAutoStart) {
-		ShowWindow(hwnd, SW_HIDE);
-	} else {
-		ShowWindow(hwnd, SW_HIDE); // Manter sempre oculto por padrão (aplicação de bandeja)
-	}
+	// Manter janela principal oculta (apenas para gerenciar o hook e mensagens)
+	ShowWindow(hwnd, SW_HIDE);
+	
+	// Mostrar janela de configurações diretamente (não usar bandeja)
+	extern HWND UI_Show(HINSTANCE, HWND);
+	UI_Show(hInstance, hwnd);
 
 	MSG msg; while (GetMessage(&msg, NULL, 0, 0)) { 
 		// Verificações periódicas de proteção
